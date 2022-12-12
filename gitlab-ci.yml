@@ -1,0 +1,94 @@
+image: node:latest
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - case $CI_JOB_LANGUAGE in
+        "python")
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          ;;
+        "javascript")
+          npm install
+          ;;
+        "php")
+          composer install
+          ;;
+      esac
+
+unit_tests:
+  stage: test
+  script:
+    - npm run test:unit
+
+vulnerability_tests:
+  stage: test
+  script:
+    - npm run test:vulnerabilities
+
+tests:
+  stage: test
+  image:
+    name: python:3.8
+    entrypoint: [""]
+  script:
+    - case $CI_JOB_LANGUAGE in
+        "python")
+          image: python:3.8
+          case $(python --version) in
+            "Python 2.7")
+              python2.7 script.py
+              ;;
+            "Python 3.5")
+              python3.5 script.py
+              ;;
+            "Python 3.8")
+              python3.8 script.py
+              ;;
+          esac
+          ;;
+        "javascript")
+          image: node:latest
+          npm install
+          unit_tests_10=npm run test:unit:10
+          vulnerabilities_tests_10=npm run test:vulnerabilities:10
+          unit_tests_12=npm run test:unit:12
+          vulnerabilities_tests_12=npm run test:vulnerabilities:12
+          unit_tests_14=npm run test:unit:14
+          vulnerabilities_tests_14=npm run test:vulnerabilities:14
+          unit_tests_16=npm run test:unit:16
+          vulnerabilities_tests_16=npm run test:vulnerabilities:16
+          unit_tests_18=npm run test:unit:18
+          vulnerabilities_tests_18=npm run test:vulnerabilities:18
+          ;;
+        "php")
+          case $(php --version) in
+            "PHP 7.0")
+              php script.php
+              ;;
+            "PHP 7.1")
+              php script.php
+              ;;
+            "PHP 7.2")
+              php script.php
+              ;;
+            "PHP 7.3")
+              php script.php
+              ;;
+            "PHP 7.4")
+              php script.php
+              ;;
+          esac
+          ;;
+      esac
+
+deploy:
+  stage: deploy
+  script:
+    - rsync -avz -e "ssh -p 22" --progress /builds/project-name/public/ user@host:/path/to/destination
